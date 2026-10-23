@@ -425,6 +425,7 @@ const ME = {
   email: ["contact", "manar.rocks"].join("@"),
   links: [
     { label: "LinkedIn",  href: "https://www.linkedin.com/in/manar-al-hajri-a35470230/" },
+    { label: "GitHub",    href: "https://github.com/mxnxvr" },
   ],
   about: `<h1>Manar Al-Hajri</h1><span class="sub">{role} · Muscat, Oman</span>
 Welcome to ManarOS, my corner of the internet, built as a small operating system.
@@ -474,8 +475,7 @@ Here's the first one, on the house: <code>manar{w3lc0me_t0_manar0s}</code>`,
   trash: [
     { name: "my_first_website_2014.html", text: "A spinning GIF, a visitor counter and music that played on its own. Some things should stay deleted." },
     { name: "serious_cv_FINAL_v7.docx",   text: "A perfectly normal CV. Replaced by this website." },
-    { name: "old_notes.b64",              text: "bWFuYXJ7YjRzM182NF8xc19uMHRfM25jcnlwdDEwbn0=", code: true },
-  ],
+    { name: "old_notes.b64",              text: "bWFuYXJ7YjRzM182NF8xc19uMHRfM25jcnlwdDEwbn0=", code: true },  ],
   dokiLines: [
     "I'm Doki. I handle security around here.",
     "There are flags hidden all over this machine. I know where they are. I'm not telling.",
@@ -1035,10 +1035,12 @@ function makeRoom(cv) {
     win = { x: m, y: Math.round(H * .05), w: W - 2 * m, h: deskTop - 4 - Math.round(H * .05) };
     muttrah.size(win.w, win.h);
     room.screen = { x: ox + 113 * k, y: oy + 3 * k, w: 134 * k, h: 73 * k };
+    room.phone = { x: ox + 252 * k, y: oy + 121 * k, w: 20 * k, h: 26 * k };
     bulbs = []; for (let x = win.x + 4; x < win.x + win.w - 2; x += 9) bulbs.push({ x, ph: Math.random() * 6.3, c: Math.random() < .5 ? "#ffd27e" : "#f2a07b" });
     grain = Array.from({ length: Math.round(W / 5) }, () => ({ x: rnd(W), y: deskTop + 2 + rnd(Math.max(1, front - deskTop - 3)), w: 6 + rnd(18) }));
   };
   room.tick = dt => muttrah.tick(dt);
+  room.phone = { x: 0, y: 0, w: 0, h: 0 };
 
   function drawDesk(t) {
     /* lamp light and the monitor's glow pooling on the wood */
@@ -1268,7 +1270,12 @@ function playIntro(done, zoomOut) {
   }
   addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } }, on);
   scr.addEventListener("click", go, on);
-  cv.addEventListener("click", go, on);
+  /* answering the buzzing phone is a trap; anywhere else on the desk logs in */
+  cv.addEventListener("click", e => {
+    const x = e.clientX * cv.width / innerWidth, y = e.clientY * cv.height / innerHeight, p = room.phone;
+    if (!going && x >= p.x && x <= p.x + p.w && y >= p.y && y <= p.y + p.h) { rickroll(); return; }
+    go();
+  }, on);
   $("#skip").addEventListener("click", e => { e.stopPropagation(); if (going) return; going = true; finish(false); }, on);
   scr.focus({ preventScroll: true });
 }
@@ -1524,6 +1531,11 @@ function mountCTF(body) {
 }
 
 /* Console challenge */
+/* a trap for the curious: answering the buzzing phone on the intro desk */
+const RICKROLL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+function rickroll() {
+  window.open(RICKROLL, "_blank", "noopener");
+}
 window.manar = {
   help() { return "manar.flag() might have something for you."; },
   flag(word) {
