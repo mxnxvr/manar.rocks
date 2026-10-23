@@ -337,7 +337,7 @@ body.rooted #flagcount { background: var(--amber); color: var(--ink); }
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; cursor: pointer;
 }
 .screen .mascot svg { width: 106px; height: 90px; margin-bottom: 8px; }
-.screen .logo { font-family: var(--f-pixel); font-weight: 700; font-size: clamp(36px, 8vw, 64px); color: var(--acc); line-height: 1; }
+.screen .logo { font-family: var(--f-pixel); font-weight: 400; letter-spacing: .08em; font-size: clamp(36px, 8vw, 64px); color: var(--acc); line-height: 1; }
 .screen .tag { color: var(--amber); margin-bottom: 10px; }
 .screen .lines { min-height: 5em; color: var(--mint); text-align: left; }
 .screen .bar { width: min(300px, 100%); height: 18px; padding: 3px; background: var(--text); margin-top: 10px; }
@@ -349,7 +349,7 @@ body.rooted #flagcount { background: var(--amber); color: var(--ink); }
   background: radial-gradient(ellipse at 50% 45%, #2c2442, #1b1626 70%); color: var(--text);
   box-shadow: 0 0 40px rgba(233, 138, 106, .25); text-align: center;
 }
-#scr b { font-family: var(--f-pixel); font-weight: 700; color: var(--acc); line-height: 1; }
+#scr b { font-family: var(--f-pixel); font-weight: 400; letter-spacing: .08em; color: var(--acc); line-height: 1; }
 #scr span { font-family: var(--f-term); font-size: .5em; color: var(--amber); animation: blink 1.2s steps(2) infinite; }
 @keyframes blink { 50% { opacity: .3; } }
 #skip {
@@ -386,7 +386,7 @@ body.rooted #flagcount { background: var(--amber); color: var(--ink); }
 
 <div id="intro" hidden>
   <canvas id="room" aria-hidden="true"></canvas>
-  <button id="scr" aria-label="Log in to ManarOS"><b>ManarOS</b><span>click to log in</span></button>
+  <button id="scr" aria-label="Log in to ManarOS"><b>Manar OS</b><span>click to log in</span></button>
   <button id="skip">Skip intro</button>
   <button id="snd">sound: on</button>
 </div>
@@ -2073,7 +2073,7 @@ function boot(fast) {
   Sound.play("boot");
   const s = document.createElement("div");
   s.className = "screen";
-  s.innerHTML = `<div class="mascot">${DOKI}</div><div class="logo">ManarOS</div><div class="tag">version 2.1</div><div class="lines"></div><div class="bar"><i></i></div><div class="skip">click to skip</div>`;
+  s.innerHTML = `<div class="mascot">${DOKI}</div><div class="logo">Manar OS</div><div class="tag">version 2.1</div><div class="lines"></div><div class="bar"><i></i></div><div class="skip">click to skip</div>`;
   document.body.appendChild(s);
   const lines = ["Mounting /home/manar ...... OK", "Starting window manager ... OK", "Waking up Doki ............ OK", rooted() ? "Root access ............... GRANTED" : `Hiding ${CTF.length} flags ............ OK`];
   const L = $(".lines", s);
