@@ -193,6 +193,7 @@ code { font-family: var(--f-term); font-size: 1.25em; }
 .ctf-msg { margin: -6px 0 0; min-height: 1.4em; font-family: var(--f-pixel); font-size: 14px; }
 .ctf-msg.good { color: var(--c-hi); } .ctf-msg.bad { color: #e0806a; }
 .chal { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.chal li.tier { display: block; background: none; box-shadow: none; padding: 10px 2px 0; font-family: var(--f-pixel); font-size: 13px; color: var(--amber); }
 .chal li { display: grid; grid-template-columns: 22px 1fr auto auto; gap: 4px 10px; align-items: center; padding: 6px 8px; background: #2a2339; box-shadow: inset 0 0 0 2px var(--paper-2); }
 .chal li.done { background: #2f3a37; }
 .chal .box { width: 18px; height: 18px; border: 2px solid var(--line); display: grid; place-items: center; font-size: 13px; font-weight: 800; background: transparent; }
@@ -452,7 +453,7 @@ I'm a fresh cybersecurity graduate from the University of Technology and Applied
 
 <b>Getting around</b>
 Double-click an icon to open it. The terminal takes commands (start with "help").
-There are 9 flags hidden on this system. Open CTF to track the ones you find.
+There are 13 flags hidden on this system, from easy to properly hard. Open CTF to track the ones you find.
 
 Here's the first one, on the house: <code>manar{w3lc0me_t0_manar0s}</code>`,
   projects: [
@@ -500,16 +501,22 @@ const CTF = [
   { id: "con",     name: "Console Log",          cat: "web",       pts: 40, hash: "5bb331f1582dc0ae988f4f6c853bca245142984a4194c9e94489900d2c276073", hint: "Open your browser's developer tools and read the console." },
   { id: "chess",   name: "Checkmate",            cat: "game",      pts: 50, hash: "59ff6e76813e5fe31d9c617b5b59ddf573b8a223d1cc85f2681be3d7d7178e81", hint: "Solve the puzzle in Chess. Sometimes the best move gives something away." },
   { id: "sudo",    name: "Privilege Escalation", cat: "forensics", pts: 60, hash: "334ffd51dd60e2d4574a0901784948bc383d495773cb52d9d4146ce89260d9b7", hint: "Read the terminal's history, then open mystery.pix in Doodle. The bucket tool only fills one exact colour." },
+  { id: "vault",   name: "Gatekeeper",           cat: "reversing", pts: 100, tier: "advanced", hash: "688beb6f646521e0f7dcf09537685ebee967f2a731a4a2dd0298b98f2bae9ce7", hint: "vault.exe doesn't store the password, only what the password turns into. Find the check in the page's code and run it backwards." },
+  { id: "xor",     name: "Known Plaintext",      cat: "crypto",    pts: 120, tier: "advanced", hash: "25714c37815915eaa3f9bc262cb34cfdee32aafb80ce60727b1b12a52d5435b7", hint: "intercepted.hex was XORed with a short repeating key. You already know how every flag begins." },
+  { id: "rsa",     name: "Small e",              cat: "crypto",    pts: 150, tier: "advanced", hash: "b605117daa13fcb733d287d806bb8470f1f2fd5c354b8141e1a6dfa7c3378e06", hint: "With e = 3 and a short message, the modulus may never have come into play." },
+  { id: "stego",   name: "Postcard",             cat: "forensics", pts: 150, tier: "advanced", hash: "c621d59addff2a9d02b0fd954d61dbc2e89a7ddf3f1d50692ab8fa1d56968c73", hint: "postcard.pix looks like any other sunset. The message lives in the least significant bit of each pixel's red channel, read row by row, 8 bits per character." },
 ];
 /* in-game rewards, lightly scrambled so a quick search of the source doesn't find them */
 const dx = s => [...atob(s)].map((c, i) => String.fromCharCode(c.charCodeAt(0) ^ (42 + i % 7))).join("");
+/* advanced rewards are XOR-locked with their own solution: the sudo flag with the password,
+   the chess flag with the winning first move, so there's nothing to decode without solving */
+const unlock = (b64, key) => [...atob(b64)].map((c, i) => String.fromCharCode(c.charCodeAt(0) ^ key.charCodeAt(i % key.length))).join("");
+const LOCK = { sudo: "PVA2Uj4rQWlLfzxuKAA+NgI7RxMgQ2lFfyNSJQ==", chess: "PAVWSiMfW0NiB1NGZRALdGAKZ18mVEU=" };
+const PW_HASH = "fb8a6d7afd4e824461be1333d75e0a083ed01f8e3e4f293db6fdf18b86c8453f";
 const LOOT = {
   dot: "R0pCTFxUVBpfShxCHEN1Sl4ecUEAXnREHEpLA0RW",
   sweep: "R0pCTFxUU0YYGF9xXFsbGF9yGkcDHk9R",
-  chess: "R0pCTFxUU0IYT0ZDG0QZdB1DcVtHGlY=",
-  sudo: "R0pCTFxUQBtTH0FxXwNYTR9OWnBAWBpaHl1MTQ==",
   con: "R0pCTFxUVBldWB0eQ0N1Tx9ZHUxEG10fUA==",
-  pw: "ehp0HmI=",
 };
 
 /* =====================================================================
@@ -718,6 +725,10 @@ const ICONS = {
   trash: sprite([
     "....kkkk....", "kkkkkkkkkkkk", "kllllllllllk", "kkkkkkkkkkkk", ".kwwwwwwwwk.", ".kwlwwlwwlk.",
     ".kwlwwlwwlk.", ".kwlwwlwwlk.", ".kwlwwlwwlk.", ".kwwwwwwwwk.", ".kkkkkkkkkk.", "............",
+  ]),
+  lock: sprite([
+    "...kkkkkk...", "..kk....kk..", "..k......k..", "..k......k..", "kkkkkkkkkkkk", "kyyyyyyyyyyk",
+    "kyyyykkyyyyk", "kyyyykkyyyyk", "kyyyyykyyyyk", "kyyyyyyyyyyk", "kkkkkkkkkkkk", "............",
   ]),
   mail: sprite([
     "............", "............", "kkkkkkkkkkkk", "kkwwwwwwwwkk", "kwkwwwwwwkwk", "kwwkwwwwkwwk",
@@ -1311,6 +1322,7 @@ const APPS = {
   paint:    { title: "Doodle",         label: "Doodle",       icon: "paint",   w: 640, h: 560, mount: mountPaint, tall: true },
   sweeper:  { title: "Cloudsweeper",   label: "Cloudsweeper", icon: "sweeper", w: 340, h: 0,   mount: mountSweeper },
   trash:    { title: "Trash",          label: "Trash",        icon: "trash",   w: 440, h: 0,   mount: mountTrash },
+  vault:    { title: "vault.exe",      label: "Vault",        icon: "lock",    w: 400, h: 0,   mount: mountVault },
   contact:  { title: "contact.exe",    label: "Contact",      icon: "mail",    w: 430, h: 0,   mount: mountContact },
 };
 
@@ -1461,9 +1473,18 @@ document.addEventListener("click", e => { if (e.target.closest("button")) Sound.
 /* =====================================================================
    CTF progress (kept in this browser only)
    ===================================================================== */
-let solved = new Set();
-try { solved = new Set(JSON.parse(localStorage.getItem("manaros-ctf") || "[]")); } catch (e) {}
-function saveSolved() { try { localStorage.setItem("manaros-ctf", JSON.stringify([...solved])); } catch (e) {} }
+/* progress is stored as the flags themselves and re-checked against their hashes on every load,
+   so editing browser storage can't mark challenges as solved */
+let solved = new Set(), found = {};
+function saveSolved() { try { localStorage.setItem("manaros-flags", JSON.stringify(Object.values(found))); } catch (e) {} }
+const progressReady = (async () => {
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem("manaros-flags") || "[]"); localStorage.removeItem("manaros-ctf"); } catch (e) {}
+  for (const flag of Array.isArray(saved) ? saved : []) {
+    try { const h = await sha256(String(flag)), c = CTF.find(x => x.hash === h); if (c) { solved.add(c.id); found[c.id] = String(flag); } } catch (e) {}
+  }
+  updateFlagCount();
+})();
 const rooted = () => solved.size === CTF.length;
 function updateFlagCount() { $("#flagcount span").textContent = `${solved.size}/${CTF.length}`; document.body.classList.toggle("rooted", rooted()); }
 updateFlagCount();
@@ -1489,7 +1510,10 @@ function mountCTF(body) {
     $(".score", body).textContent = `${got}/${total} pts`;
     $(".meter i", body).style.width = (got / total * 100) + "%";
     list.innerHTML = "";
+    let tier = "";
     CTF.forEach(c => {
+      const t = c.tier || "beginner";
+      if (t !== tier) { tier = t; list.insertAdjacentHTML("beforeend", `<li class="tier">${t === "advanced" ? "Advanced" : "Beginner"}</li>`); }
       const li = document.createElement("li");
       if (solved.has(c.id)) li.className = "done";
       li.innerHTML = `<span class="box">${solved.has(c.id) ? "✓" : ""}</span><span class="nm"></span><span class="pts">${c.pts}</span><button class="btn hb" type="button" aria-expanded="false">Hint</button><p class="hint" hidden></p>`;
@@ -1515,7 +1539,7 @@ function mountCTF(body) {
     if (!hit) { Sound.play("wrong"); msg.className = "ctf-msg bad"; msg.textContent = "That's not a flag. Check for typos, and keep the manar{...} part."; return; }
     input.value = "";
     if (solved.has(hit.id)) { msg.className = "ctf-msg good"; msg.textContent = `You already have "${hit.name}".`; return; }
-    solved.add(hit.id); saveSolved(); render();
+    solved.add(hit.id); found[hit.id] = val; saveSolved(); render();
     if (!rooted()) Sound.play("flag");
     msg.className = "ctf-msg good";
     msg.textContent = solved.size === CTF.length ? `"${hit.name}" +${hit.pts}. That's all of them. Nicely done.` : `Correct! "${hit.name}" +${hit.pts} pts.`;
@@ -1524,10 +1548,11 @@ function mountCTF(body) {
   let armed = false;
   reset.addEventListener("click", () => {
     if (!armed) { armed = true; reset.textContent = "Click again to reset"; setTimeout(() => { armed = false; reset.textContent = "Reset progress"; }, 3000); return; }
-    solved.clear(); saveSolved(); render(); armed = false; reset.textContent = "Reset progress";
+    solved.clear(); found = {}; saveSolved(); render(); armed = false; reset.textContent = "Reset progress";
     msg.className = "ctf-msg"; msg.textContent = "Progress cleared.";
   });
   render();
+  progressReady.then(render);
 }
 
 /* Console challenge */
@@ -1604,15 +1629,20 @@ function mountTerminal(body, el, id) {
     id: () => "uid=1000(manar) gid=1000(manar) groups=1000(manar),27(sudo)",
     uname: () => "ManarOS 2.1.0 manar.rocks pixel-kernel x86_64",
     ls: a => /-\w*a/.test(a)
-      ? ".  ..  .bash_history  .flag  about_me.txt  contact.exe  projects/  secrets.txt"
-      : "about_me.txt  contact.exe  projects/  secrets.txt",
+      ? ".  ..  .bash_history  .flag  about_me.txt  contact.exe  intercepted.hex  projects/  rsa_backup.txt  secrets.txt"
+      : "about_me.txt  contact.exe  intercepted.hex  projects/  rsa_backup.txt  secrets.txt",
     cat: a => {
       if (!a) return "usage: cat <file>";
       if (a === "about_me.txt") { openApp("about"); return "Opening about_me.txt…"; }
       if (a === ".flag") return dx(LOOT.dot);
       if (a === ".bash_history") return HISTORY;
-      if (a === "secrets.txt") return rooted() ? dx(LOOT.sudo) : "cat: secrets.txt: Permission denied";
+      if (a === "secrets.txt") return rooted() ? found.sudo : "cat: secrets.txt: Permission denied";
       if (a === "contact.exe") return "cat: contact.exe: binary file. Try: open contact";
+      if (a === "intercepted.hex") return "# captured on the wire. repeating-key XOR, key length unknown.\n2951055053032f5e5b464f27345c5f004f0c77481f6e56492a4316";
+      if (a === "rsa_backup.txt") return "# backup of an encrypted note. n is 1024-bit, so it's safe… right?\n" +
+        "n = 167065026514869149114633710539699783056026807329387131511003701671274286702626702432852132825212788482133521571540760823856496617867526471557375193648071246945954539017925758171675010160549635673080066241067451641651092790250508786288224900114276424372683477374810638829782631524810501350413004165660704889423\n" +
+        "e = 3\n" +
+        "c = 1528473738951423676290651551732117234040427715921498978790532323338285364181195956755066465918524264271310955326263444621977399405319753968666392279662026834504031214802343787064134439318257288785441125";
       if (a === "projects" || a === "projects/") return "cat: projects/: Is a directory";
       return `cat: ${a}: No such file or directory`;
     },
@@ -1642,13 +1672,15 @@ function mountTerminal(body, el, id) {
     echo: a => a || "",
     exit: () => { setTimeout(() => closeWin(id), 200); return "logout"; },
   };
-  $("form", body).addEventListener("submit", e => {
+  $("form", body).addEventListener("submit", async e => {
     e.preventDefault();
     const raw = input.value.trim(); input.value = "";
     if (sudoFor) {
       print("[sudo] password for manar:", "p");
       sudoFor = null; input.type = "text"; promptEl.textContent = PROMPT;
-      if (raw.toUpperCase() === dx(LOOT.pw)) { print(dx(LOOT.sudo), "ok"); Sound.play("flag"); }
+      const pw = raw.toUpperCase();
+      let ok = false; try { ok = (await sha256(pw)) === PW_HASH; } catch (err) {}
+      if (ok) { print(unlock(LOCK.sudo, pw), "ok"); Sound.play("flag"); }
       else { print("Sorry, try again.", "err"); Sound.play("wrong"); }
       return;
     }
@@ -1777,7 +1809,7 @@ function mountChess(body) {
     userMoves++;
     if (game.in_checkmate()) {
       done = true;
-      Sound.play("flag"); say(`Checkmate! Flag: <code>${dx(LOOT.chess)}</code>`);
+      Sound.play("flag"); say(`Checkmate! Flag: <code>${unlock(LOCK.chess, game.history()[0])}</code>`);
       dokiSay("Queen sacrifice? Respect.");
       return;
     }
@@ -1824,7 +1856,7 @@ function mountPaint(body) {
       <div class="stage"><div class="pxframe"><canvas aria-label="Pixel art canvas"></canvas><div class="grid"></div></div></div>
       <div class="ptools">
         <button class="btn" data-undo>Undo</button><button class="btn" data-clear>Clear</button><span class="sep"></span>
-        <button class="btn" data-mystery>Open mystery.pix</button><button class="btn" data-save>Save PNG</button>
+        <button class="btn" data-mystery>Open mystery.pix</button><button class="btn" data-postcard>Open postcard.pix</button><button class="btn" data-save>Save PNG</button>
       </div>
       <p class="pxstatus"><span class="pos">Hover the canvas</span><span class="note"></span></p>
     </div>
@@ -1919,9 +1951,25 @@ function mountPaint(body) {
       if (ch === ".") return;
       for (let dy = 0; dy < 2; dy++) for (let dx2 = 0; dx2 < 2; dx2++) px[(2 + y * 2 + dy) * N + (5 + x * 2 + dx2)] = HP[ch];
     }));
-    const secret = dx(LOOT.pw);
-    [...secret].forEach((ch, i) => MINI[ch].forEach((row, y) => [...row].forEach((b, x) => { if (b === "1") px[(25 + y) * N + (7 + i * 4 + x)] = "#fefefe"; })));
+    [807, 808, 809, 839, 841, 871, 872, 873, 903, 935, 812, 843, 844, 876, 908, 939, 940, 941, 815, 817, 847, 849, 880, 911, 913, 943, 945, 819, 820, 821, 853, 883, 884, 885, 917, 947, 948, 949, 823, 855, 887, 919, 951, 952, 953].forEach(i => { px[i] = "#fefefe"; });
     draw(); fit(); noteEl.textContent = "Opened mystery.pix. Just a heart. Probably.";
+  });
+  /* postcard.pix: a sunset whose red channel carries a message in its lowest bit */
+  $("[data-postcard]", body).addEventListener("click", () => {
+    snapshot(); N = 32; $("[data-size]", body).value = "32";
+    const sky = [[43, 44, 92], [70, 58, 112], [112, 72, 121], [161, 88, 119], [207, 113, 110], [235, 154, 108], [242, 178, 115]];
+    const red = "2a2b2b2a2b2b2a2b2a2b2b2a2a2a2a2b2a2b2b2a2b2b2b2a2a2b2b2a2a2a2a2b2a2b2b2b2a2a2b2a2a2b2b2b2b2a2b2b2a2b2b2a2b2b2a2a2a2a2b2b2a2a2b2b2a2a2b2b2a2b2a2a2a2b2b2b2a2a2b2b2a2b2b2b2a2b2a2a2a2b2a2b2b2b2b2b464747474646474746464747464646474647474646474747464747464747474646464747464646474647474646474746464647474646464746474746464647474646474746474646464747464747474646474747464746464647464747474747707171717070717170707171707071717071717070707171707171717070717070707171707071717071717170717070707171717070717170717171717170717070707070707070707070707070707070707070707070707070707070707070a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a1a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0fefefea0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0fefefefefefefea0a0a0a0a0a0cececececececececececececececececececefefefefefefefececececececececececececececececececececececececefefefefefefefefefecececececececececececececececececececececececefefefefefefefefefecececececeeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeafefefefefefefefefeeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeafefefefefefefeeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeafefefefefefefeeaeaeaeaeaeaf2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2fefefef2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f3f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f23a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3af23af23af23a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3b3a3a3a3a3a3a3a3a3a3a3a3af23af23a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3af23af23af23a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3af23af23a3a3a3a3a3a3a3a2424242424242424242424242424242424242424f224f224f224242424242424242424242424242424242424242424242424242424f224f224242424242424242424242424242424242424242424242424242424f224f224f224242424242424242424242424242424242424242424242424242424f224f224242424242424242424242424242424242424242424242424242424f224f224f224242424242424242424242424242424242424242424242424242424f224f224242424242424242424242424242424242424242424242424242424f224f224f224242424242424";
+    const hex = v => v.toString(16).padStart(2, "0");
+    px = Array.from({ length: N * N }, (_, i) => {
+      const x = i % N, y = i / N | 0;
+      let [r, g, b] = sky[Math.min(sky.length - 1, Math.floor(y / 3))];
+      if ((x - 22) ** 2 + (y - 14) ** 2 < 20) [r, g, b] = [255, 214, 140];
+      if (y > 20) [r, g, b] = y > 24 ? [36, 40, 66] : [58, 54, 92];
+      if (y > 20 && Math.abs(x - 22) < 3 && (x + y) % 2) [r, g, b] = [242, 178, 115];
+      r = parseInt(red.substr(i * 2, 2), 16);
+      return "#" + hex(r) + hex(g) + hex(b);
+    });
+    draw(); fit(); noteEl.textContent = "Opened postcard.pix. Wish you were here.";
   });
   $("[data-save]", body).addEventListener("click", () => {
     const out = document.createElement("canvas"), k = Math.floor(512 / N);
@@ -2035,8 +2083,28 @@ function mountTrash(body) {
   });
 }
 
+/* Gatekeeper: the vault never stores its password, only what each character turns into */
+const _g = [0x37, 0x83, 0xc7, 0x62, 0x99, 0xf9, 0x76, 0x7f, 0x1d, 0xde, 0xe7, 0x3f, 0x05, 0x1c, 0x52, 0xf1, 0x4f, 0xcd, 0xef, 0x67, 0xfb, 0x3f, 0x42, 0xd3, 0xa1, 0x69, 0x05, 0xc8, 0xd1, 0x37];
+const _k = [0x5a, 0x17, 0xc3];
+function _gate(s) {
+  if (s.length !== _g.length) return false;
+  for (let i = 0; i < s.length; i++) if ((((s.charCodeAt(i) ^ _k[i % 3]) + i * 0xd) & 0xff) !== _g[i]) return false;
+  return true;
+}
+function mountVault(body) {
+  body.innerHTML = `<div class="contact"><h2>Vault</h2><p>Restricted. Enter the passphrase to unlock.</p>
+    <form class="submit"><input id="vault-input" placeholder="passphrase" autocomplete="off" spellcheck="false" aria-label="Passphrase"><button class="btn">Unlock</button></form>
+    <p class="ctf-msg" role="status"></p></div>`;
+  const input = $("input", body), msg = $(".ctf-msg", body);
+  $("form", body).addEventListener("submit", e => {
+    e.preventDefault();
+    if (_gate(input.value.trim())) { Sound.play("flag"); msg.className = "ctf-msg good"; msg.textContent = "Unlocked. That passphrase is your flag."; }
+    else { Sound.play("wrong"); msg.className = "ctf-msg bad"; msg.textContent = "Access denied."; }
+  });
+}
+
 function mountContact(body) {
-  body.innerHTML = `<div class="contact"><h2>Get in touch</h2><p>Want to work together, talk about a project, or tell me you found all nine flags? Send me an email.</p>
+  body.innerHTML = `<div class="contact"><h2>Get in touch</h2><p>Want to work together, talk about a project, or tell me you found every flag? Send me an email.</p>
     <div class="mailrow"><code></code><button class="btn copy">Copy</button></div><div class="links"></div></div>`;
   $("code", body).textContent = ME.email;
   const copy = $(".copy", body);
