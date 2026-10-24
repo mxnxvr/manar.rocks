@@ -2,6 +2,9 @@
 
 A pixel-art operating system that doubles as my portfolio.
 
+
+![ManarOS intro](manar-rocks-intro.gif)
+
 **Live:** https://manar.rocks
 
 
